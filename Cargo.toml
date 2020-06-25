@@ -6,8 +6,26 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "vrogue"
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+# This makes the compiled code faster and smaller, but it makes compiling slower,
+# so it's only enabled in release mode.
+lto = true
+
 [dependencies]
-rltk = { version = "0.8.0" }
+rltk = { version = "0.8.1" }
 specs = "0.16.1"
 specs-derive = "0.4.1"
 
+
+[target.wasm32-unknown-unknown.dependencies]
+web-sys = { version = "0.3", features=["console", "Attr", "CanvasRenderingContext2d", "Document", "Element", "Event",
+    "EventTarget", "HtmlCanvasElement", "HtmlElement", "HtmlInputElement", "Node", "Text", "Window", "KeyboardEvent",
+    "MouseEvent"] }
+wasm-bindgen = "0.2"
+
+[target."cfg(debug_assertions)".dependencies]
+console_error_panic_hook = "0.1.5"
