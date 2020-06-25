@@ -256,7 +256,7 @@ pub fn main_js() -> Result<(), JsValue> {
     console::log_1(&JsValue::from_str("Hello world!"));
 
     run();
-    
+
     Ok(())
 }
 
