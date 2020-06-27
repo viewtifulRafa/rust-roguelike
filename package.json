@@ -1,10 +1,11 @@
 {
-  "author": "You <you@example.com>",
-  "name": "rust-webpack-template",
+  "author": "viewtifulRafa",
+  "name": "viewtifulRogue",
   "version": "0.1.0",
   "scripts": {
     "build": "rimraf dist pkg && webpack",
     "start": "rimraf dist pkg && webpack-dev-server --open -d",
+    "deploy": "gh-pages -d dist",
     "test": "cargo test && wasm-pack test --headless"
   },
   "dependencies": {
@@ -13,17 +14,18 @@
     "prop-types": "^15.7.2"
   },
   "devDependencies": {
-    "@wasm-tool/wasm-pack-plugin": "^1.1.0",
-    "copy-webpack-plugin": "^5.0.3",
-    "webpack": "^4.42.0",
-    "webpack-cli": "^3.3.3",
-    "webpack-dev-server": "^3.7.1",
-    "rimraf": "^3.0.0",
     "@babel/core": "^7.10.3",
     "@babel/preset-env": "^7.10.3",
     "@babel/preset-react": "^7.10.1",
+    "@wasm-tool/wasm-pack-plugin": "^1.1.0",
     "babel-loader": "^8.1.0",
+    "copy-webpack-plugin": "^5.0.3",
     "css-loader": "^3.6.0",
-    "style-loader": "^1.2.1"
+    "gh-pages": "^3.1.0",
+    "rimraf": "^3.0.0",
+    "style-loader": "^1.2.1",
+    "webpack": "^4.42.0",
+    "webpack-cli": "^3.3.3",
+    "webpack-dev-server": "^3.7.1"
   }
 }
