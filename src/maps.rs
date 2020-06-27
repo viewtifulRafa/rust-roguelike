@@ -1,5 +1,7 @@
-use rltk::{Rltk, RGB };
 
+use rltk::{Rltk, RGB };
+use std::cmp::{max,min};
+pub use crate::rect::*;
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct Tile {
@@ -34,10 +36,49 @@ fn FLOOR() -> TileType {
     )
 }
 
+const MIN_SIZE:i32 = 6;       
+const MAX_SIZE:i32 = 10;       
+
+pub struct Room {
+    pos: Rectangle,
+}
+
+impl Room {
+ 
+    pub fn new (x:i32, y:i32, width:i32, height: i32) -> Room {
+        Room {
+            pos: Rectangle::new(x,y,width,height)
+        }
+    }
+ 
+    pub fn random_size(max_x:i32, max_y:i32) -> Room {
+        let mut rng = rltk::RandomNumberGenerator::new();
+        let width = rng.range(MIN_SIZE, MAX_SIZE);
+        let height = rng.range(MIN_SIZE, MAX_SIZE);
+        Room::new(
+            rng.roll_dice(1,max_x-width-1)-1,
+            rng.roll_dice(1,max_y-height-1)-1,
+            width, 
+            height
+        )
+    }
+
+    pub fn intersects(&self, other: &Room) -> bool {
+        self.pos.intersects(&other.pos)
+    }
+    pub fn center(&self) -> (i32,i32) {
+        self.pos.center()
+    }
+
+}
+
+const MAX_ROOMS:i32 = 30;
+
 pub struct Map {
-    width:  i32,
-    height: i32,
-    tiles: Vec<TileType>
+    pub width:  i32,
+    pub height: i32,
+    tiles: Vec<TileType>,
+    pub rooms: Vec<Room>
 }
 
 impl Map {
@@ -46,11 +87,12 @@ impl Map {
         Map {
             width: width,
             height: height,
-            tiles: vec![FLOOR(); (height * width) as usize],
+            tiles: vec![WALL(); (height * width) as usize],
+            rooms: vec![]
         }
     }
 
-    pub fn new_random(width: i32, height: i32) -> Map {
+    pub fn new_fully_random(width: i32, height: i32) -> Map {
         let mut map = Map::new(width, height);
 
         // Build a wall around
@@ -78,6 +120,34 @@ impl Map {
         map
 
     }
+
+    pub fn new_random(width: i32, height: i32) -> Map {
+        let mut map = Map::new(width, height);
+        let mut rng = rltk::RandomNumberGenerator::new();
+
+        for i in 0..MAX_ROOMS {
+            let room = Room::random_size(map.width, map.height);
+
+            if map.try_to_add_room(room) {
+            
+                // Connect with previous room
+                let n_rooms = map.rooms.len();
+                if n_rooms > 1  {
+                    let (x, y) = map.rooms[n_rooms-1].pos.center();
+                    let (prev_x, prev_y) = map.rooms[n_rooms-2].pos.center();
+                    if rng.range(0,2) == 1 {
+                        map.add_horizontal_tunnel(prev_x,x,prev_y);
+                        map.add_vertical_tunnel(prev_y,y,x);
+                    } else {
+                        map.add_vertical_tunnel(prev_y,y,prev_x);
+                        map.add_horizontal_tunnel(prev_x,x,y);
+                    }
+                }
+            }
+        }
+
+        map
+    }
     
     /// Converts Tile coordinates to Tile index
     /// TODO: 80 Should be a parameter
@@ -93,6 +163,38 @@ impl Map {
     pub fn get_tile_at(&self, x: i32, y: i32) -> &TileType {
         let idx = self.coord_to_idx(x,y);
         &self.tiles[idx]
+    }
+
+    pub fn try_to_add_room (&mut self, room: Room) -> bool {
+        for map_room in self.rooms.iter() {
+            if room.intersects(&map_room){
+                return false;
+            }
+        }
+        self.add_room(room);
+        true
+    }
+
+    pub fn add_room (&mut self, room: Room) {
+        for y in room.pos.y0..=room.pos.y1 {
+            for x in room.pos.x0..=room.pos.x1 {
+                self.set_tile_at(x, y, FLOOR())
+            }
+        }
+        self.rooms.push(room)
+    }
+
+    pub fn add_horizontal_tunnel(&mut self,x0:i32, x1:i32, y:i32) {
+        for x in min(x0,x1)..=max(x0,x1) {
+            self.set_tile_at(x, y, FLOOR())
+        }
+    }
+
+    pub fn add_vertical_tunnel(&mut self,y0:i32, y1:i32, x:i32) {
+        for y in min(y0,y1)..=max(y0,y1) {
+            self.set_tile_at(x, y, FLOOR())
+        }
+        
     }
 
     pub fn is_solid(&self, x: i32, y: i32) -> bool {

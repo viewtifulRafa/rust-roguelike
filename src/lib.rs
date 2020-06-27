@@ -1,4 +1,5 @@
 pub mod maps;
+pub mod rect;
 
 use rltk::{Rltk, GameState,RGB, VirtualKeyCode};
 use specs::prelude::*;
@@ -117,11 +118,13 @@ pub extern fn run() -> rltk::BError {
     gs.ecs.register::<Renderable>();
     gs.ecs.register::<Player>();
     gs.ecs.register::<LeftMover>();
-    gs.ecs.insert(Map::new_random(80,50));
+    let map = Map::new_random(80,50);
+    let (player_x,player_y) = map.rooms[0].center();
+    gs.ecs.insert(map);
 
     gs.ecs
         .create_entity()
-        .with(Position { x: 40, y: 25 })
+        .with(Position { x: player_x, y: player_y })
         .with(Renderable {
             glyph: rltk::to_cp437('@'),
             fg: RGB::named(rltk::YELLOW),
