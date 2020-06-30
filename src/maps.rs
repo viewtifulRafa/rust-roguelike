@@ -77,7 +77,7 @@ const MAX_ROOMS:i32 = 30;
 pub struct Map {
     pub width:  i32,
     pub height: i32,
-    tiles: Vec<TileType>,
+    pub tiles: Vec<TileType>,
     pub rooms: Vec<Room>
 }
 

@@ -1,38 +1,17 @@
 pub mod maps;
 pub mod rect;
+pub mod components;
 
 use rltk::{Rltk, GameState,RGB, VirtualKeyCode};
 use specs::prelude::*;
 use std::cmp;
-use specs_derive::Component;
 
-use rltk::prelude::{BTerm, InitHints, BACKEND_INTERNAL};
 pub use crate::maps::*;
-
+pub use crate::components::*;
 //use web_sys::console;
 
 // Components 
 
-#[derive(Component)]
-struct Position {
-    x: i32,
-    y: i32,
-}
-
-#[derive(Component)]
-struct Renderable {
-    glyph: rltk::FontCharType,
-    fg: RGB,
-    bg: RGB,
-}
-
-#[derive(Component)]
-struct LeftMover {    
-}
-
-#[derive(Component, Debug)]
-struct Player {
-}
 
 // System
 struct LeftWalker {}
@@ -66,10 +45,22 @@ fn player_input(gs: &mut State, ctx: &mut Rltk) {
     match ctx.key {
         None => {},
         Some(key) => match key {
-            VirtualKeyCode::Left  => try_move_player(-1, 0, &mut gs.ecs ),
-            VirtualKeyCode::Right => try_move_player(1, 0, &mut gs.ecs ),
-            VirtualKeyCode::Up    => try_move_player(0, -1, &mut gs.ecs ),
-            VirtualKeyCode::Down  => try_move_player(0, 1, &mut gs.ecs ),
+            VirtualKeyCode::Left |
+            VirtualKeyCode::Numpad4 |
+            VirtualKeyCode::H => try_move_player(-1, 0, &mut gs.ecs ),
+            
+            VirtualKeyCode::Right |
+            VirtualKeyCode::Numpad6 |
+            VirtualKeyCode::L=> try_move_player(1, 0, &mut gs.ecs ),
+
+            VirtualKeyCode::Up |
+            VirtualKeyCode::Numpad8 |
+            VirtualKeyCode::K   => try_move_player(0, -1, &mut gs.ecs ),
+            
+            VirtualKeyCode::Down |
+            VirtualKeyCode::Numpad2 |
+            VirtualKeyCode::J => try_move_player(0, 1, &mut gs.ecs ),
+            
             _ => {}
         },
     }
@@ -118,6 +109,7 @@ pub extern fn run() -> rltk::BError {
     gs.ecs.register::<Renderable>();
     gs.ecs.register::<Player>();
     gs.ecs.register::<LeftMover>();
+    gs.ecs.register::<FoV>();
     let map = Map::new_random(80,50);
     let (player_x,player_y) = map.rooms[0].center();
     gs.ecs.insert(map);
