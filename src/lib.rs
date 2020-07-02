@@ -1,6 +1,7 @@
 pub mod maps;
 pub mod rect;
 pub mod components;
+pub mod systems;
 
 use rltk::{Rltk, GameState,RGB, VirtualKeyCode};
 use specs::prelude::*;
@@ -8,24 +9,10 @@ use std::cmp;
 
 pub use crate::maps::*;
 pub use crate::components::*;
+pub use crate::systems::visibility::VisibilitySystem;
+
 //use web_sys::console;
 
-// Components 
-
-
-// System
-struct LeftWalker {}
-
-impl<'a> System<'a> for LeftWalker {
-    type SystemData = (ReadStorage<'a, LeftMover>, WriteStorage<'a, Position>);
-
-    fn run (&mut self, (lefty, mut pos): Self::SystemData) {
-        for (_lefty,pos) in (&lefty, &mut pos).join() {
-            pos.x -= 1;
-            if pos.x < 0 { pos.x = 79; }
-        }
-    }
-}
 
 fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
@@ -72,8 +59,8 @@ struct State {
 
 impl State {
     fn run_systems(&mut self) {
-        let mut lw = LeftWalker{};
-        lw.run_now(&self.ecs);
+        let mut vis = VisibilitySystem{};
+        vis.run_now(&self.ecs);
         self.ecs.maintain();
     }
 }
@@ -85,7 +72,7 @@ impl GameState for State {
         self.run_systems();
 
         let map = self.ecs.fetch::<Map>();
-        map.draw(ctx);
+        map.draw(&self.ecs, ctx);
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
@@ -123,6 +110,7 @@ pub extern fn run() -> rltk::BError {
             bg: RGB::named(rltk::BLACK),
         })
         .with(Player{})
+        .with(FoV{visible_tiles: Vec::new(), range: 8})
         .build();
         
     rltk::main_loop(context, gs)

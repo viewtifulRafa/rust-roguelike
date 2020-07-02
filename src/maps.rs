@@ -1,7 +1,8 @@
-
-use rltk::{Rltk, RGB };
+use specs::prelude::*;
+use rltk::{Rltk, RGB, Point, Algorithm2D, BaseMap };
 use std::cmp::{max,min};
 pub use crate::rect::*;
+pub use crate::components::{FoV,Player};
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct Tile {
@@ -81,6 +82,21 @@ pub struct Map {
     pub rooms: Vec<Room>
 }
 
+impl BaseMap for Map {
+    fn is_opaque(&self, idx:usize) -> bool {
+        if let TileType::Wall(_) = self.tiles[idx] {
+            return true;
+        }
+        false
+    }
+}
+
+impl Algorithm2D for Map {
+    fn dimensions(&self) -> Point {
+        Point::new(self.width, self.height)
+    }
+}
+
 impl Map {
 
     pub fn new(width: i32, height: i32 ) -> Map {
@@ -125,7 +141,7 @@ impl Map {
         let mut map = Map::new(width, height);
         let mut rng = rltk::RandomNumberGenerator::new();
 
-        for i in 0..MAX_ROOMS {
+        for _i in 0..MAX_ROOMS {
             let room = Room::random_size(map.width, map.height);
 
             if map.try_to_add_room(room) {
@@ -204,23 +220,32 @@ impl Map {
         }
     }
 
-    pub fn draw (&self, ctx: &mut Rltk) {
-        let mut x = 0;
-        let mut y = 0;
+    pub fn is_inside(&self, x: i32, y: i32) -> bool {
+        return x >= 0 && x <= self.width && y >= 0 && y <= self.height
+    }
+
+    pub fn draw (&self, ecs: &World, ctx: &mut Rltk) {
+        let mut fovs = ecs.write_storage::<FoV>();
+        let mut players = ecs.write_storage::<Player>();
+        for (_player, fov) in (&mut players, &mut fovs).join() {
+            let mut x = 0;
+            let mut y = 0;
         
-        for tile in &self.tiles {
-            match tile {
-                TileType::Floor(render) => {ctx.set(x,y,render.fg,render.bg,render.glyph)},
-                TileType::Wall(render)  => {ctx.set(x,y,render.fg,render.bg,render.glyph)},
-            }           
-        
-            x+=1;
-            if x > self.width-1 {
-                x = 0;
-                y += 1;
+            for tile in &self.tiles {
+                let pt = Point::new(x,y);
+                if fov.visible_tiles.contains(&pt) {
+                    match tile {
+                        TileType::Floor(render) => {ctx.set(x,y,render.fg,render.bg,render.glyph)},
+                        TileType::Wall(render)  => {ctx.set(x,y,render.fg,render.bg,render.glyph)},
+                    }           
+                }
+                x+=1;
+                if x > self.width-1 {
+                    x = 0;
+                    y += 1;
+                }
             }
         }
-
     }
 }
 
