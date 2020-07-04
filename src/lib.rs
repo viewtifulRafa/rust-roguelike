@@ -17,13 +17,16 @@ pub use crate::systems::visibility::VisibilitySystem;
 fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
     let mut players = ecs.write_storage::<Player>();
+    let mut fovs = ecs.write_storage::<FoV>();
+
     let map = ecs.fetch::<Map>();
-    for (_player,pos) in (&mut players, &mut positions).join() {
+    for (_player,pos,fov) in (&mut players, &mut positions, &mut fovs).join() {
         let x = cmp::min(79, cmp::max(0, pos.x + delta_x));
         let y = cmp::min(79, cmp::max(0, pos.y + delta_y));
         if ! map.is_solid(x,y) {
             pos.x = x;
             pos.y = y;
+            fov.dirty = true;
         }
     }
 }
@@ -72,7 +75,7 @@ impl GameState for State {
         self.run_systems();
 
         let map = self.ecs.fetch::<Map>();
-        map.draw(&self.ecs, ctx);
+        map.draw(ctx);
 
         let positions = self.ecs.read_storage::<Position>();
         let renderables = self.ecs.read_storage::<Renderable>();
@@ -110,7 +113,7 @@ pub extern fn run() -> rltk::BError {
             bg: RGB::named(rltk::BLACK),
         })
         .with(Player{})
-        .with(FoV{visible_tiles: Vec::new(), range: 8})
+        .with(FoV{visible_tiles: Vec::new(), range: 8, dirty: true})
         .build();
         
     rltk::main_loop(context, gs)

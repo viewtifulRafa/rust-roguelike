@@ -78,8 +78,10 @@ const MAX_ROOMS:i32 = 30;
 pub struct Map {
     pub width:  i32,
     pub height: i32,
+    pub rooms: Vec<Room>,
     pub tiles: Vec<TileType>,
-    pub rooms: Vec<Room>
+    pub revealed: Vec<bool>,
+    pub visible: Vec<bool>
 }
 
 impl BaseMap for Map {
@@ -103,8 +105,10 @@ impl Map {
         Map {
             width: width,
             height: height,
+            rooms: vec![],
             tiles: vec![WALL(); (height * width) as usize],
-            rooms: vec![]
+            revealed: vec![false; (height * width) as usize],
+            visible: vec![false; (height * width) as usize]
         }
     }
 
@@ -166,7 +170,7 @@ impl Map {
     }
     
     /// Converts Tile coordinates to Tile index
-    /// TODO: 80 Should be a parameter
+    /// TODO: Use points instead of x y
     fn coord_to_idx(&self, x: i32, y: i32) -> usize {
         ((y * self.width) + x ) as usize
     }
@@ -213,6 +217,16 @@ impl Map {
         
     }
 
+    pub fn set_revealed(&mut self, p: &Point, b: bool ) {
+        let idx = self.coord_to_idx(p.x, p.y);
+        self.revealed[idx] = b;
+    }
+
+    pub fn set_visible(&mut self, p: &Point, b: bool ) {
+        let idx = self.coord_to_idx(p.x, p.y);
+        self.visible[idx] = b;
+    }
+
     pub fn is_solid(&self, x: i32, y: i32) -> bool {
         match self.get_tile_at(x, y) {
             TileType::Wall(_) => true,
@@ -224,28 +238,28 @@ impl Map {
         return x >= 0 && x <= self.width && y >= 0 && y <= self.height
     }
 
-    pub fn draw (&self, ecs: &World, ctx: &mut Rltk) {
-        let mut fovs = ecs.write_storage::<FoV>();
-        let mut players = ecs.write_storage::<Player>();
-        for (_player, fov) in (&mut players, &mut fovs).join() {
-            let mut x = 0;
-            let mut y = 0;
+    pub fn draw (&self, ctx: &mut Rltk) {
+        let mut x = 0;
+        let mut y = 0;
         
-            for tile in &self.tiles {
-                let pt = Point::new(x,y);
-                if fov.visible_tiles.contains(&pt) {
-                    match tile {
-                        TileType::Floor(render) => {ctx.set(x,y,render.fg,render.bg,render.glyph)},
-                        TileType::Wall(render)  => {ctx.set(x,y,render.fg,render.bg,render.glyph)},
-                    }           
+        for (idx, tile) in self.tiles.iter().enumerate() {
+            if self.revealed[idx] {
+                let glyph;
+                let mut fg;
+                let bg;
+                match tile {
+                    TileType::Floor(render) => {fg = render.fg; bg = render.bg; glyph = render.glyph;},
+                    TileType::Wall(render)  => {fg = render.fg; bg = render.bg; glyph = render.glyph;},
                 }
-                x+=1;
-                if x > self.width-1 {
-                    x = 0;
-                    y += 1;
-                }
+                if ! self.visible[idx] { fg = fg.to_greyscale()}            
+                ctx.set(x,y,fg,bg,glyph);
+            }
+            x+=1;
+            if x > self.width-1 {
+                x = 0;
+                y += 1;
             }
         }
-    }
+}
 }
 
