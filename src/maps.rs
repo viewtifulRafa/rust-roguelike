@@ -2,7 +2,7 @@ use specs::prelude::*;
 use rltk::{Rltk, RGB, Point, Algorithm2D, BaseMap };
 use std::cmp::{max,min};
 pub use crate::rect::*;
-pub use crate::components::{FoV,Player};
+pub use crate::components::{FoV,Player,Position};
 
 #[derive(PartialEq, Clone, Copy)]
 pub struct Tile {
@@ -225,6 +225,11 @@ impl Map {
     pub fn set_visible(&mut self, p: &Point, b: bool ) {
         let idx = self.coord_to_idx(p.x, p.y);
         self.visible[idx] = b;
+    }
+
+    pub fn is_visible(&self, p: &Position ) -> bool {
+        let idx = self.coord_to_idx(p.x, p.y);
+        self.visible[idx]
     }
 
     pub fn is_solid(&self, x: i32, y: i32) -> bool {
